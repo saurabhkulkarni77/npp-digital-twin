@@ -1,1 +1,78 @@
-{"dataset":{"caveat":"At W=60 s every model scores ~0.19 test macro-F1 — an information limit of the data (early windows are near-identical across classes), not a model defect. The gate therefore covers W = 120/300/600 s only.","channels":"88 no-oracle sensor channels served by the twin (the 96-channel oracle setting was also evaluated in the project; the twin serves the no-oracle models)","classes":["LOCA","LOCAC","SLBIC","SLBOC","SGATR","SGBTR","RW","RI","FLB","MD","LR","LLB"],"id":"nppad-task-e","metric":"test macro-F1, no-oracle (88-channel) setting, from the Task E advanced-modeling addendum","source":"NPPAD PCTRAN PWR simulations — Task E take-home (Predicting the Boiling Crisis), accident diagnosis, 12 classes","split":"by run, stratified by class and severity — train 725 / validation 242 / test 244 runs","windows_s":[60,120,300,600]},"default_model":"Random Forest","gate":{"override_label":"allow-regression","rule":"A pull request that changes registry metrics fails the Model validation gate if any production-stage model's test macro-F1 at W=120/300/600 regresses more than tolerance_rel (relative) against models/baselines.json, unless the PR carries the override label.","tolerance_rel":0.01},"models":[{"description":"Original Task E model: 400 trees on per-window summary features of the 88 no-oracle channels. The twin's default diagnosis model.","key":"rf","name":"Random Forest","served_as":"data/run_<CLASS>.json field `proba` — baked at all 60 diagnosis steps","stage":"production","test_macro_f1":{"120":0.964,"300":0.964,"600":0.955},"version":"taske.1"},{"description":"Advanced addendum's best single model: LightGBM on the same summary features (fixed validation-selected configuration, early-stopped per step).","key":"gbm","name":"Gradient Boosting (LightGBM)","served_as":"data/run_<CLASS>.json field `proba_gbm` — baked at all 60 diagnosis steps","stage":"production","test_macro_f1":{"120":0.963,"300":0.967,"600":0.963},"version":"adv.1"},{"description":"Soft-voting ensemble of RF + GBM + TCN with validation-chosen per-window weights. Best or tied-best no-oracle macro-F1 at W=120/300.","key":"ens","name":"Ensemble (RF + GBM + TCN)","served_as":"data/run_<CLASS>.json field `proba_ens` — ONLY at W = 60/120/300/600 s (steps k = 6/12/30/60); the TCN member exists only at those window lengths and nothing is interpolated between them","stage":"production","test_macro_f1":{"120":0.967,"300":0.968,"600":0.955},"version":"adv.1"}],"schema":1}
+{
+ "dataset": {
+  "caveat": "At W=60 s every model scores ~0.19 test macro-F1 \u2014 an information limit of the data (early windows are near-identical across classes), not a model defect. The gate therefore covers W = 120/300/600 s only.",
+  "channels": "88 no-oracle sensor channels served by the twin (the 96-channel oracle setting was also evaluated in the project; the twin serves the no-oracle models)",
+  "classes": [
+   "LOCA",
+   "LOCAC",
+   "SLBIC",
+   "SLBOC",
+   "SGATR",
+   "SGBTR",
+   "RW",
+   "RI",
+   "FLB",
+   "MD",
+   "LR",
+   "LLB"
+  ],
+  "id": "nppad-task-e",
+  "metric": "test macro-F1, no-oracle (88-channel) setting, from the Task E advanced-modeling addendum",
+  "source": "NPPAD PCTRAN PWR simulations \u2014 Task E take-home (Predicting the Boiling Crisis), accident diagnosis, 12 classes",
+  "split": "by run, stratified by class and severity \u2014 train 725 / validation 242 / test 244 runs",
+  "windows_s": [
+   60,
+   120,
+   300,
+   600
+  ]
+ },
+ "default_model": "Random Forest",
+ "gate": {
+  "override_label": "allow-regression",
+  "rule": "A pull request that changes registry metrics fails the Model validation gate if any production-stage model's test macro-F1 at W=120/300/600 regresses more than tolerance_rel (relative) against models/baselines.json, unless the PR carries the override label.",
+  "tolerance_rel": 0.01
+ },
+ "models": [
+  {
+   "description": "Original Task E model: 400 trees on per-window summary features of the 88 no-oracle channels. The twin's default diagnosis model.",
+   "key": "rf",
+   "name": "Random Forest",
+   "served_as": "data/run_<CLASS>.json field `proba` \u2014 baked at all 60 diagnosis steps",
+   "stage": "production",
+   "test_macro_f1": {
+    "120": 0.964,
+    "300": 0.964,
+    "600": 0.955
+   },
+   "version": "taske.1"
+  },
+  {
+   "description": "Advanced addendum's best single model: LightGBM on the same summary features (fixed validation-selected configuration, early-stopped per step).",
+   "key": "gbm",
+   "name": "Gradient Boosting (LightGBM)",
+   "served_as": "data/run_<CLASS>.json field `proba_gbm` \u2014 baked at all 60 diagnosis steps",
+   "stage": "production",
+   "test_macro_f1": {
+    "120": 0.963,
+    "300": 0.94,
+    "600": 0.963
+   },
+   "version": "adv.1"
+  },
+  {
+   "description": "Soft-voting ensemble of RF + GBM + TCN with validation-chosen per-window weights. Best or tied-best no-oracle macro-F1 at W=120/300.",
+   "key": "ens",
+   "name": "Ensemble (RF + GBM + TCN)",
+   "served_as": "data/run_<CLASS>.json field `proba_ens` \u2014 ONLY at W = 60/120/300/600 s (steps k = 6/12/30/60); the TCN member exists only at those window lengths and nothing is interpolated between them",
+   "stage": "production",
+   "test_macro_f1": {
+    "120": 0.967,
+    "300": 0.968,
+    "600": 0.955
+   },
+   "version": "adv.1"
+  }
+ ],
+ "schema": 1
+}
