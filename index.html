@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NPP Digital Twin — NPPAD Accident Diagnosis (Task E)</title>
+<link rel="stylesheet" href="styles.css">
+<script type="importmap">
+{ "imports": {
+    "three": "./vendor/three.module.js",
+    "three/addons/": "./vendor/"
+} }
+</script>
+</head>
+<body>
+<header>
+  <div class="title-block">
+    <h1>NPP Digital Twin</h1>
+    <p class="subtitle">NPPAD accident diagnosis &middot; PCTRAN pressurized-water reactor &middot; Task E</p>
+  </div>
+  <div class="header-controls">
+    <label class="reveal-toggle"><input type="checkbox" id="revealToggle"> Reveal true accident</label>
+    <button id="vrButton" class="btn" disabled>Enter VR</button>
+  </div>
+</header>
+
+<nav id="runBar" aria-label="Choose a simulated run"></nav>
+
+<main>
+  <section id="viewport">
+    <div id="sceneContainer"></div>
+    <div id="hud">
+      <div class="hud-row"><span>Sim time</span><strong id="hudTime">t = 0 s</strong></div>
+      <div class="hud-row"><span>Phase</span><strong id="hudPhase">Steady state</strong></div>
+      <div class="hud-row"><span>Diagnosis window</span><strong id="hudW">W = &mdash;</strong></div>
+      <div class="hud-row"><span>Run</span><strong id="hudRun">&mdash;</strong></div>
+    </div>
+    <div id="onsetToast">Accident injected at t = 20 s</div>
+  </section>
+
+  <aside id="sidePanel">
+    <div class="panel">
+      <h2>Live diagnosis <span class="model-tag">random forest</span></h2>
+      <div id="diagBody">
+        <div id="diagIdle" class="diag-idle">Steady state &mdash; no accident yet.<br>
+          The model sees the first W seconds after onset.</div>
+        <div id="diagBars" class="hidden">
+          <div class="bar-row" id="barRow0"><span class="bar-label"></span>
+            <div class="bar-track"><div class="bar-fill"></div></div><span class="bar-val"></span></div>
+          <div class="bar-row" id="barRow1"><span class="bar-label"></span>
+            <div class="bar-track"><div class="bar-fill"></div></div><span class="bar-val"></span></div>
+          <div class="bar-row" id="barRow2"><span class="bar-label"></span>
+            <div class="bar-track"><div class="bar-fill"></div></div><span class="bar-val"></span></div>
+          <p class="diag-note">Top-3 of 12 accident classes, from the
+            88 realistic (no-oracle) channels only.</p>
+        </div>
+      </div>
+      <div id="truthBox" class="hidden">
+        <div class="hud-row"><span>True accident</span><strong id="truthLabel">&mdash;</strong></div>
+        <div class="hud-row"><span>Model verdict</span><strong id="verdictLabel">&mdash;</strong></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Plant state</h2>
+      <div class="tiles">
+        <div class="tile"><span>RCS pressure</span><strong id="tileP">&mdash;</strong><em>bar</em></div>
+        <div class="tile"><span>Pressurizer level</span><strong id="tileLVPZ">&mdash;</strong><em>%</em></div>
+        <div class="tile"><span>Reactor power</span><strong id="tilePWR">&mdash;</strong><em>%</em></div>
+        <div class="tile"><span>DNBR margin</span><strong id="tileDNBR">&mdash;</strong><em>ratio</em></div>
+        <div class="tile"><span>SG A level</span><strong id="tileLSGA">&mdash;</strong><em>raw</em></div>
+        <div class="tile"><span>SG B level</span><strong id="tileLSGB">&mdash;</strong><em>raw</em></div>
+      </div>
+      <p class="diag-note">The 3D plant reacts to these same channels: SG and
+        pressurizer water levels, core heat, rod position, and the flashing
+        break marker are all driven by the simulated data, frame by frame.</p>
+    </div>
+  </aside>
+</main>
+
+<section id="bottomPanel">
+  <div id="transport">
+    <button id="playBtn" class="btn primary">&#10074;&#10074;</button>
+    <button id="restartBtn" class="btn" title="Back to t = 0">&#8634;</button>
+    <label class="speed-label">Speed
+      <select id="speedSel">
+        <option value="0.5">0.5&times;</option>
+        <option value="1" selected>1&times;</option>
+        <option value="2">2&times;</option>
+        <option value="4">4&times;</option>
+      </select>
+    </label>
+    <div id="scrubWrap">
+      <input type="range" id="scrub" min="0" max="62" step="0.01" value="0">
+      <div id="onsetTick" title="Accident injected (t = 20 s)"></div>
+    </div>
+    <span id="clockLabel">t = 0 s</span>
+  </div>
+  <div id="chartArea">
+    <div id="chartChips"></div>
+    <canvas id="chart"></canvas>
+  </div>
+</section>
+
+<footer>
+  <p>Diagnosis model: random forest retrained with the exact Task E notebook protocol
+     (run-level severity split, 88 no-oracle channels, summary features, 400 trees, seed 2026) &mdash;
+     one instance per 10 s of observed transient. In the project it is the best model from
+     W = 120 s on (test macro-F1 &asymp; 0.96); at W &le; 60 s every model is near chance
+     (&asymp; 0.19) because the plant has barely responded &mdash; watch the bars stay flat, then sharpen.
+     Runs shown are held-out <strong>test</strong> runs, one per accident class (median severity).
+     Fully offline: no external requests.</p>
+</footer>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

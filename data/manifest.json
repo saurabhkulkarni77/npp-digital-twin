@@ -1,0 +1,270 @@
+{
+ "title": "NPP Digital Twin \u2014 NPPAD accident diagnosis (Task E)",
+ "classes": [
+  "LOCA",
+  "LOCAC",
+  "SLBIC",
+  "SLBOC",
+  "SGATR",
+  "SGBTR",
+  "RW",
+  "RI",
+  "FLB",
+  "MD",
+  "LR",
+  "LLB"
+ ],
+ "t0_onset_s": 20.0,
+ "channels": {
+  "P": {
+   "name": "RCS pressure",
+   "unit": "bar"
+  },
+  "LVPZ": {
+   "name": "Pressurizer level",
+   "unit": "%"
+  },
+  "LSGA": {
+   "name": "Steam generator A level",
+   "unit": ""
+  },
+  "LSGB": {
+   "name": "Steam generator B level",
+   "unit": ""
+  },
+  "PSGA": {
+   "name": "Steam generator A pressure",
+   "unit": "bar"
+  },
+  "PSGB": {
+   "name": "Steam generator B pressure",
+   "unit": "bar"
+  },
+  "WSTA": {
+   "name": "Steam flow A",
+   "unit": ""
+  },
+  "WSTB": {
+   "name": "Steam flow B",
+   "unit": ""
+  },
+  "WFWA": {
+   "name": "Feedwater flow A",
+   "unit": ""
+  },
+  "WFWB": {
+   "name": "Feedwater flow B",
+   "unit": ""
+  },
+  "TAVG": {
+   "name": "Average coolant temperature",
+   "unit": "\u00b0C"
+  },
+  "THA": {
+   "name": "Hot-leg temperature A",
+   "unit": "\u00b0C"
+  },
+  "THB": {
+   "name": "Hot-leg temperature B",
+   "unit": "\u00b0C"
+  },
+  "PWR": {
+   "name": "Reactor power",
+   "unit": "%"
+  },
+  "DNBR": {
+   "name": "DNBR (boiling-crisis margin)",
+   "unit": ""
+  },
+  "VOID": {
+   "name": "Core void fraction",
+   "unit": ""
+  },
+  "TPCT": {
+   "name": "Peak cladding temperature",
+   "unit": "\u00b0C"
+  }
+ },
+ "default_chart_channels": [
+  "P",
+  "LVPZ",
+  "LSGA",
+  "LSGB",
+  "PWR",
+  "DNBR"
+ ],
+ "runs": [
+  {
+   "id": "LOCA",
+   "class": "LOCA",
+   "severity": 51.0,
+   "file": "LOCA/51.csv",
+   "data": "run_LOCA.json",
+   "break": {
+    "kind": "rcs",
+    "loop": null
+   }
+  },
+  {
+   "id": "LOCAC",
+   "class": "LOCAC",
+   "severity": 51.0,
+   "file": "LOCAC/51.csv",
+   "data": "run_LOCAC.json",
+   "break": {
+    "kind": "rcs",
+    "loop": null
+   }
+  },
+  {
+   "id": "SLBIC",
+   "class": "SLBIC",
+   "severity": 51.0,
+   "file": "SLBIC/51.csv",
+   "data": "run_SLBIC.json",
+   "break": {
+    "kind": "steam",
+    "loop": "B",
+    "devA": 266.99,
+    "devB": 291.18
+   }
+  },
+  {
+   "id": "SLBOC",
+   "class": "SLBOC",
+   "severity": 51.0,
+   "file": "SLBOC/51.csv",
+   "data": "run_SLBOC.json",
+   "break": {
+    "kind": "steamout",
+    "loop": "B"
+   }
+  },
+  {
+   "id": "SGATR",
+   "class": "SGATR",
+   "severity": 51.0,
+   "file": "SGATR/51.csv",
+   "data": "run_SGATR.json",
+   "break": {
+    "kind": "sg",
+    "loop": "A"
+   }
+  },
+  {
+   "id": "SGBTR",
+   "class": "SGBTR",
+   "severity": 56.0,
+   "file": "SGBTR/56.csv",
+   "data": "run_SGBTR.json",
+   "break": {
+    "kind": "sg",
+    "loop": "B"
+   }
+  },
+  {
+   "id": "RW",
+   "class": "RW",
+   "severity": 51.0,
+   "file": "RW/51.csv",
+   "data": "run_RW.json",
+   "break": {
+    "kind": "core",
+    "loop": null
+   }
+  },
+  {
+   "id": "RI",
+   "class": "RI",
+   "severity": -40.0,
+   "file": "RI/-40.csv",
+   "data": "run_RI.json",
+   "break": {
+    "kind": "core",
+    "loop": null
+   }
+  },
+  {
+   "id": "FLB",
+   "class": "FLB",
+   "severity": 51.0,
+   "file": "FLB/51.csv",
+   "data": "run_FLB.json",
+   "break": {
+    "kind": "feed",
+    "loop": "B",
+    "devA": 271.5,
+    "devB": 543.21
+   }
+  },
+  {
+   "id": "MD",
+   "class": "MD",
+   "severity": 51.0,
+   "file": "MD/51.csv",
+   "data": "run_MD.json",
+   "break": {
+    "kind": "none",
+    "loop": null
+   }
+  },
+  {
+   "id": "LR",
+   "class": "LR",
+   "severity": 51.0,
+   "file": "LR/51.csv",
+   "data": "run_LR.json",
+   "break": {
+    "kind": "none",
+    "loop": null
+   }
+  },
+  {
+   "id": "LLB",
+   "class": "LLB",
+   "severity": 51.0,
+   "file": "LLB/51.csv",
+   "data": "run_LLB.json",
+   "break": {
+    "kind": "none",
+    "loop": null
+   }
+  }
+ ],
+ "model": {
+  "name": "Random forest (Task E baseline, retrained)",
+  "protocol": "Notebook-exact: run-level split by severity (k%5 -> test/val/train), no-oracle 88 channels, summary features [last, mean, slope] per channel, RandomForestClassifier(n_estimators=400, class_weight='balanced_subsample', random_state=2026). One instance per 10 s step k=1..60 (window = first k samples from t=20 s); diagnosis at time t uses the instance for W = t-20 s.",
+  "validation": [
+   {
+    "W_s": 30,
+    "retrained_test_macro_F1": 0.1924,
+    "notebook_test_macro_F1": 0.1877,
+    "abs_diff": 0.0047
+   },
+   {
+    "W_s": 60,
+    "retrained_test_macro_F1": 0.1917,
+    "notebook_test_macro_F1": 0.1877,
+    "abs_diff": 0.004
+   },
+   {
+    "W_s": 120,
+    "retrained_test_macro_F1": 0.9635,
+    "notebook_test_macro_F1": 0.9635,
+    "abs_diff": 0.0
+   },
+   {
+    "W_s": 300,
+    "retrained_test_macro_F1": 0.9642,
+    "notebook_test_macro_F1": 0.9642,
+    "abs_diff": 0.0
+   },
+   {
+    "W_s": 600,
+    "retrained_test_macro_F1": 0.9554,
+    "notebook_test_macro_F1": 0.9554,
+    "abs_diff": 0.0
+   }
+  ]
+ }
+}
