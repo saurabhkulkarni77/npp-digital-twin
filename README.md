@@ -20,9 +20,13 @@ python3 -m http.server 8000
 
 Also hosted at:
 - GitHub Pages: https://saurabhkulkarni77.github.io/npp-digital-twin/
-- AWS S3: via the included GitHub Actions workflow (`.github/workflows/deploy-aws.yml`,
-  bucket `npp-digital-twin-2026`) — runs once the repo has the
-  `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` secrets (same names as HydroTwin).
+- AWS S3: http://npp-digital-twin-2026.s3-website-us-east-1.amazonaws.com
+  (bucket `npp-digital-twin-2026`, us-east-1, static website hosting).
+  Deployed via the manual **"Deploy NPP Digital Twin to AWS S3"** workflow in
+  the `hydrotwin-site` repo (Actions → Run workflow), which uses that repo's
+  AWS secrets to create/configure the bucket and sync this repo's site files.
+  The included `.github/workflows/deploy-aws.yml` mirrors the same deploy for
+  anyone who forks this repo and adds their own AWS secrets.
 
 ## What you see
 
