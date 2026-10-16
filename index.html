@@ -40,10 +40,28 @@
 
   <aside id="sidePanel">
     <div class="panel">
-      <h2>Live diagnosis <span class="model-tag">random forest</span></h2>
+      <h2>Live diagnosis <span class="model-tag" id="modelTag">random forest</span></h2>
+      <div class="model-row">
+        <label for="modelSel">Diagnosis model</label>
+        <select id="modelSel">
+          <option value="rf" selected>Random Forest</option>
+          <option value="gbm">Gradient Boosting (LightGBM)</option>
+          <option value="ens">Ensemble (RF + GBM + TCN)</option>
+        </select>
+      </div>
+      <p class="model-note">Test macro-F1 (88 no-oracle channels, W = 120/300/600 s):
+        RF 0.964/0.964/0.955 &middot; Gradient Boosting 0.963/0.967/0.963 &middot;
+        Ensemble 0.967/0.968/0.955. At W &le; 60 s every model is near chance
+        (&asymp; 0.19) &mdash; an information limit, not a model flaw. The ensemble
+        is defined only at W = 60/120/300/600 s.</p>
       <div id="diagBody">
         <div id="diagIdle" class="diag-idle">Steady state &mdash; no accident yet.<br>
           The model sees the first W seconds after onset.</div>
+        <div id="diagEns" class="diag-idle hidden">The ensemble only produces a diagnosis
+          at W = 60, 120, 300 and 600 s &mdash; its member models were evaluated at
+          those four windows only. Play or scrub to one of those steps to see it,
+          or switch to Gradient Boosting, which is baked at every 10 s step.
+          Nothing is interpolated between the ensemble's steps.</div>
         <div id="diagBars" class="hidden">
           <div class="bar-row" id="barRow0"><span class="bar-label"></span>
             <div class="bar-track"><div class="bar-fill"></div></div><span class="bar-val"></span></div>
@@ -103,11 +121,14 @@
 </section>
 
 <footer>
-  <p>Diagnosis model: random forest retrained with the exact Task E notebook protocol
-     (run-level severity split, 88 no-oracle channels, summary features, 400 trees, seed 2026) &mdash;
-     one instance per 10 s of observed transient. In the project it is the best model from
-     W = 120 s on (test macro-F1 &asymp; 0.96); at W &le; 60 s every model is near chance
-     (&asymp; 0.19) because the plant has barely responded &mdash; watch the bars stay flat, then sharpen.
+  <p>Diagnosis models (switchable in the panel above): the random forest retrained with the
+     exact Task E notebook protocol (run-level severity split, 88 no-oracle channels, summary
+     features, 400 trees, seed 2026), plus the advanced-modeling addendum's gradient-boosting
+     (LightGBM) model and a soft-voting RF + GBM + TCN ensemble &mdash; all on the same split
+     and channels, one instance per 10 s of observed transient. Test macro-F1 &asymp; 0.96 for
+     all three from W = 120 s on; at W &le; 60 s every model is near chance (&asymp; 0.19)
+     because the plant has barely responded &mdash; watch the bars stay flat, then sharpen.
+     The ensemble is defined only at W = 60/120/300/600 s and is never interpolated.
      Runs shown are held-out <strong>test</strong> runs, one per accident class (median severity).
      Fully offline: no external requests.</p>
 </footer>

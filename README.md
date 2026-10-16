@@ -36,8 +36,11 @@ Also hosted at:
   steam generators, core heat, rod position, and a flashing break marker are
   all driven frame-by-frame by the simulated channel data (each run's
   deviation from its own steady state) — not by canned animation.
-- **Live diagnosis panel** — top-3 accident probabilities from the project's
-  random-forest model, updated as the observation window W grows. Probabilities
+- **Live diagnosis panel** — top-3 accident probabilities, updated as the
+  observation window W grows, with a **model toggle**: Random Forest (the
+  original Task E model), Gradient Boosting (LightGBM), and a soft-voting
+  Ensemble (RF + GBM + TCN) from the advanced-modeling addendum. Switching
+  models swaps the probabilities for the current run and step. Probabilities
   stay near-uniform at W ≤ 60 s and sharpen after ~120 s — the project's core
   finding, visible live. A *Reveal true accident* toggle scores the model.
 - **Channel charts** — any 6 of 17 key channels (RCS pressure, pressurizer
@@ -89,6 +92,36 @@ Validation — retrained vs notebook test macro-F1 (no-oracle random forest):
 Exact agreement at W ≥ 120 s; the W ≤ 60 s regime is near-chance for every
 model, where the fourth decimal is seed jitter.
 
+### The advanced models (toggle)
+
+The addendum (`~/workspace/boiling_crisis_e/advanced/` in the project files)
+added two models on the **same split, same 88 no-oracle channels, same
+summary features**, and their per-step probabilities for these 12 runs are
+baked into the same run files (`proba_gbm`, `proba_ens`, alongside the
+forest's `proba`):
+
+- **Gradient Boosting (LightGBM)** — the best advanced *single* model by
+  validation macro-F1 (small trees: 15 leaves, lr 0.05). Baked at **every**
+  10 s step with one fixed configuration, early-stopped on validation per
+  step, so it can be compared with the forest at any W.
+- **Ensemble** — soft-voting RF + GBM + TCN with validation-chosen weights
+  per window. Best test score in 4 of the 6 informative setting×window cells
+  in the addendum. It exists **only at W = 60/120/300/600 s**, because the
+  TCN member was evaluated only at those four windows; the panel says so at
+  other steps rather than interpolating.
+
+Test macro-F1, no-oracle setting (the setting the twin uses):
+
+| W | Random Forest | Gradient Boosting | Ensemble |
+|---|---|---|---|
+| 120 s | 0.9635 | 0.9626 | 0.9666 |
+| 300 s | 0.9642 | 0.9671 | 0.9677 |
+| 600 s | 0.9554 | 0.9632 | 0.9551 |
+
+(At W = 60 s all three sit at ≈ 0.19 — with only 60 s of post-onset data the
+classes are not yet separable; in the *oracle* 96-channel setting the GBM
+reaches 0.975/0.979/0.983, but the twin deliberately stays no-oracle.)
+
 ## Honest quirks of the data
 
 - **SLBOC barely moves the plant in the first 600 s** — at every severity, no
@@ -108,7 +141,9 @@ model, where the fourth decimal is seed jitter.
 index.html  styles.css  app.js     the app (Three.js scene + UI + charts)
 vendor/                            three.module.js (r160, MIT) + OrbitControls.js
 data/manifest.json                 classes, channel metadata, run index, model card
-data/run_<CLASS>.json              one baked test run per class (channels + probabilities)
+data/run_<CLASS>.json              one baked test run per class (channels + per-step
+                                   probabilities: proba = RF, proba_gbm = LightGBM at all
+                                   60 steps, proba_ens = ensemble at W = 60/120/300/600 only)
 .github/workflows/deploy-aws.yml   optional AWS S3 deploy (mirrors HydroTwin)
 ```
 

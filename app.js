@@ -1,6 +1,7 @@
 // NPP Digital Twin — NPPAD accident diagnosis (Task E)
-// Standalone, offline. Data: baked PCTRAN test runs + random-forest probabilities
-// retrained with the Task E notebook protocol (see README).
+// Standalone, offline. Data: baked PCTRAN test runs + per-step diagnosis
+// probabilities from three models (random forest, LightGBM gradient boosting,
+// RF+GBM+TCN ensemble), all trained with the Task E protocol (see README).
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/OrbitControls.js';
 
@@ -13,8 +14,29 @@ const S = {
   manifest: null, run: null, runMeta: null,
   frame: 0, playing: true, speed: 1, scrubbing: false,
   reveal: false, chartSel: [], lastShownSec: -1, toastShown: false,
+  model: 'rf', // selected diagnosis model: 'rf' | 'gbm' | 'ens'
   bases: {}, // per-channel pre-onset baseline of the loaded run
 };
+
+/* Diagnosis models. RF and GBM probabilities are baked at every step k=1..60.
+   The ensemble exists ONLY at W = 60/120/300/600 s (k = 6/12/30/60) — its
+   members were evaluated at those windows; currentProba returns null anywhere
+   else and the UI says so instead of interpolating. */
+const MODELS = {
+  rf:  { tag: 'random forest',    label: 'Random Forest' },
+  gbm: { tag: 'gradient boosting', label: 'Gradient Boosting (LightGBM)' },
+  ens: { tag: 'ensemble',          label: 'Ensemble (RF + GBM + TCN)' },
+};
+const ENS_STEP_W = { 6: '60', 12: '120', 30: '300', 60: '600' }; // step k -> W key
+function currentProba(k) {
+  if (!S.run || k <= 0) return null;
+  if (S.model === 'gbm') return S.run.proba_gbm ? S.run.proba_gbm[k - 1] : null;
+  if (S.model === 'ens') {
+    const key = ENS_STEP_W[k];
+    return key && S.run.proba_ens ? S.run.proba_ens[key] : null;
+  }
+  return S.run.proba[k - 1];
+}
 
 /* ---------------- data ---------------- */
 async function loadManifest() {
@@ -314,14 +336,27 @@ function diagStep() { // k = samples since onset at the current frame, 0 = pre-o
 function updateDiagnosis() {
   const k = diagStep();
   const t = Math.round(S.frame) * 10;
+  const row = currentProba(k);
   if (k === 0 || !S.run) {
     $('diagIdle').classList.remove('hidden');
     $('diagBars').classList.add('hidden');
+    $('diagEns').classList.add('hidden');
     $('hudW').textContent = 'W = —';
+  } else if (!row) {
+    // ensemble selected at a step it does not define: say so, show nothing fake
+    $('diagIdle').classList.add('hidden');
+    $('diagBars').classList.add('hidden');
+    $('diagEns').classList.remove('hidden');
+    $('hudW').textContent = `W = ${k * 10} s`;
+    if (S.reveal) {
+      $('truthLabel').textContent = `${S.run.class} (sev ${S.run.severity})`;
+      $('verdictLabel').textContent = 'ensemble n/a at this W';
+      $('verdictLabel').className = '';
+    }
   } else {
-    const row = S.run.proba[k - 1];
     const order = row.map((p, i) => [p, i]).sort((a, b) => b[0] - a[0]);
     $('diagIdle').classList.add('hidden');
+    $('diagEns').classList.add('hidden');
     $('diagBars').classList.remove('hidden');
     order.slice(0, 3).forEach(([p, ci], r) => {
       const rowEl = $('barRow' + r);
@@ -444,6 +479,14 @@ $('revealToggle').onchange = e => {
   $('truthBox').classList.toggle('hidden', !S.reveal);
   updateDiagnosis();
 };
+function setModel(m) {
+  if (!MODELS[m]) return;
+  S.model = m;
+  $('modelSel').value = m;
+  $('modelTag').textContent = MODELS[m].tag;
+  updateDiagnosis();
+}
+$('modelSel').onchange = e => setModel(e.target.value);
 
 function updateAll(force = false) {
   if (!S.run) return;
@@ -510,19 +553,23 @@ vrBtn.onclick = async () => {
 
 /* ---------------- boot + debug handle for verification ---------------- */
 window.__NPP_DT__ = {
-  state: () => ({
-    run: S.run ? S.run.class : null,
-    frame: S.frame, t: Math.round(S.frame) * 10,
-    k: diagStep(),
-    probaSum: S.run && diagStep() > 0
-      ? S.run.proba[diagStep() - 1].reduce((a, b) => a + b, 0) : null,
-    top1: S.run && diagStep() > 0
-      ? S.manifest.classes[S.run.proba[diagStep() - 1].indexOf(Math.max(...S.run.proba[diagStep() - 1]))]
-      : null,
-    sceneObjects: scene.children.length,
-    playing: S.playing,
-  }),
+  state: () => {
+    const row = currentProba(diagStep());
+    return {
+      run: S.run ? S.run.class : null,
+      frame: S.frame, t: Math.round(S.frame) * 10,
+      k: diagStep(),
+      model: S.model,
+      probaSum: row ? row.reduce((a, b) => a + b, 0) : null,
+      top1: row ? S.manifest.classes[row.indexOf(Math.max(...row))] : null,
+      top1Conf: row ? Math.max(...row) : null,
+      ensNoteVisible: !$('diagEns').classList.contains('hidden'),
+      sceneObjects: scene.children.length,
+      playing: S.playing,
+    };
+  },
   setFrame: f => { S.frame = f; updateAll(true); },
+  setModel,
   loadRun,
   ready: () => !!S.run,
   renderInfo: () => ({ calls: renderer.info.render.calls,
