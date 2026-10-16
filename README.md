@@ -150,3 +150,16 @@ data/run_<CLASS>.json              one baked test run per class (channels + per-
 Data: NPPAD (PCTRAN simulations), https://github.com/thu-inet/NuclearPowerPlantAccidentData.
 Built as a companion visualization for the Task E submission; it does not
 change any submitted deliverable.
+
+## MLOps (Level 2)
+
+This repo runs a Level-2 MLOps setup around the twin's three baked
+diagnosis models — CI tests for the site, the run data, and the
+advanced-model probability blocks; a versioned model registry with a
+validation gate (no served model's test macro-F1 may regress >1% vs
+the frozen baselines without an `allow-regression` label); a weekly
+monitor that re-validates the baked data and probes both live
+hostings, filing a single `mlops-monitor` issue on findings; an honest
+continuous-training handoff stub (training itself lives in the Task E
+project workspace); and versioned GitHub Releases carrying the twin
+distribution ZIP. Full concept → implementation map: [MLOPS.md](MLOPS.md).

@@ -1,0 +1,31 @@
+name: CI — site, data & model tests
+
+# Level-2 CI: on every PR and every push to main, validate the baked
+# twin site (HTML/JS sanity), the baked data (run-JSON contracts,
+# advanced-model probability blocks vs the addendum reference), the
+# model registry, and internal asset/link targets.
+# A red run blocks merge confidence — see MLOPS.md.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install pytest
+        run: pip install pytest
+      - name: Run test suite
+        run: python -m pytest tests/ -q

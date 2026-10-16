@@ -1,0 +1,41 @@
+name: CT — retrain handoff (stub)
+
+# Continuous-training *request* side. Training runs in the Task E
+# project workspace (submission notebook + advanced-modeling addendum),
+# not in this repo; this workflow validates a retrain request against
+# models/registry.json and records the handoff. It deliberately does
+# NOT train anything — see retrain/README.md and MLOPS.md.
+
+on:
+  workflow_dispatch:
+    inputs:
+      model:
+        description: "Model to retrain"
+        type: choice
+        default: all
+        options:
+          - all
+          - rf
+          - gbm
+          - ens
+      reason:
+        description: "Why is this retrain requested?"
+        type: string
+        default: "manual"
+
+permissions:
+  contents: read
+
+jobs:
+  handoff:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate retrain request + emit handoff
+        run: >
+          python retrain/handoff.py
+          --model "${{ inputs.model }}"
+          --reason "${{ inputs.reason }}"
