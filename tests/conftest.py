@@ -2,8 +2,8 @@
 
 The suite validates the *baked* twin exactly as it is served: page/JS
 sanity, run-data contracts (12 runs x 63 frames x 60 diagnosis steps),
-the advanced-model probability blocks against the Task E addendum
-reference snapshot, and internal asset/link targets. Everything is
+the round-2 conformal prediction sets, and internal asset/link
+targets. Everything is
 stdlib-only apart from pytest itself.
 """
 import json
@@ -28,9 +28,6 @@ N_CHANNELS = 17
 N_FRAMES = 63
 N_STEPS = 60
 T_ONSET = 20.0
-
-# Windows (seconds of post-onset data) at which the ensemble exists.
-ENSEMBLE_W = ["60", "120", "300", "600"]
 
 # Probability rows are baked rounded to 4 dp, so a 12-class row can sum
 # to 1 +/- ~0.001; 0.01 is a safe contract tolerance.

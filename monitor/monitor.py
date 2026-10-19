@@ -4,19 +4,19 @@
 Recomputes, from this repo's own baked artifacts plus two read-only
 HTTP probes:
 
-  * Run-data integrity: for each of the 12 runs, the RF and GBM blocks
-    hold 60 steps of valid 12-class distributions (rows sum to 1),
-    the ensemble block exists ONLY at W = 60/120/300/600 s, the time
-    axis is 63 frames, and the channel set matches the manifest.
+  * Run-data integrity: for each of the 12 runs, the RF block holds
+    60 steps of valid 12-class distributions (rows sum to 1), the
+    time axis is 63 frames, and the channel set matches the manifest.
   * Registry consistency: models/registry.json metrics equal the
     frozen models/baselines.json values (a drift between the two means
     the gate inputs no longer describe the accepted evaluation), and
-    the registry's model names match the labels the page's toggle
-    serves from app.js.
+    the registry's model name matches the label the page serves
+    from app.js.
   * Live availability: both hostings answer HTTP 200 and serve the
-    twin — GitHub Pages (index carries the model toggle; app.js names
-    all three models) and the AWS S3 website endpoint (index 200 with
-    the toggle; one run JSON downloads and its rows sum to 1).
+    twin — GitHub Pages (index carries the diagnosis-model tag;
+    app.js names the registry model) and the AWS S3 website endpoint
+    (index 200 with the tag; one run JSON downloads and its rows
+    sum to 1).
 
 Writes a Markdown report (default ./monitor_report.md) and, when
 running in GitHub Actions, sets the step outputs `breach` and
@@ -44,7 +44,6 @@ CLASSES = [
 N_FRAMES = 63
 N_STEPS = 60
 SUM_TOL = 0.01
-ENSEMBLE_W = ["60", "120", "300", "600"]
 PAGES_URL = "https://saurabhkulkarni77.github.io/npp-digital-twin/"
 AWS_URL = "http://npp-digital-twin-2026.s3-website-us-east-1.amazonaws.com/"
 HTTP_TIMEOUT = 30
@@ -104,15 +103,8 @@ def main():
             findings.append(f"**{cls}** — channel set differs from the "
                             "manifest.")
         check_block(findings, cls, "proba", run["proba"])
-        check_block(findings, cls, "proba_gbm", run["proba_gbm"])
-        ens_w = sorted(run["proba_ens"], key=int)
-        if ens_w != ENSEMBLE_W:
-            findings.append(f"**{cls}** — ensemble windows {ens_w}, "
-                            f"expected {ENSEMBLE_W} (only the evaluated "
-                            "windows may exist).")
     notes.append(f"Run data: 12 runs checked — 63 frames, {n_channels} "
-                 "channels, RF + GBM blocks at 60 steps, ensemble only "
-                 "at W = 60/120/300/600 s.")
+                 "channels, RF block at 60 steps.")
 
     # --- registry consistency --------------------------------------------
     registry = load(root, "models", "registry.json")
@@ -134,7 +126,7 @@ def main():
     for model in registry["models"]:
         if f"label: '{model['name']}'" not in app_js:
             findings.append(f"**Registry** — {model['name']} is not a "
-                            "label served by the app.js model toggle.")
+                            "label served by app.js.")
     notes.append("Registry: "
                  + ", ".join(f"{m['name']} "
                              f"{m['test_macro_f1']['120']}/"
@@ -151,13 +143,13 @@ def main():
         for name, base in (("GitHub Pages", PAGES_URL), ("AWS S3", AWS_URL)):
             try:
                 status, body = fetch(base)
-                ok = status == 200 and 'id="modelSel"' in body
+                ok = status == 200 and 'id="modelTag"' in body
                 live_rows.append((name, base, status,
-                                  "toggle present" if ok else "toggle MISSING"))
+                                  "model tag present" if ok else "model tag MISSING"))
                 if not ok:
                     findings.append(f"**Live {name}** — {base} answered "
-                                    f"{status} but the model toggle was "
-                                    "not found in the served page.")
+                                    f"{status} but the diagnosis-model "
+                                    "tag was not found in the served page.")
             except Exception as e:  # hosting down = finding, not a crash
                 live_rows.append((name, base, "ERR", str(e)[:80]))
                 findings.append(f"**Live {name}** — {base} unreachable: "
@@ -167,7 +159,7 @@ def main():
             named = all(m["name"] in body for m in registry["models"])
             if status != 200 or not named:
                 findings.append("**Live GitHub Pages** — served app.js "
-                                "does not name all three registry models.")
+                                "does not name every registry model.")
         except Exception as e:
             findings.append(f"**Live GitHub Pages** — app.js fetch "
                             f"failed: {e}")

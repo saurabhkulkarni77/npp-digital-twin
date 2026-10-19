@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """Continuous-training handoff validator (honest stub).
 
-Model training does NOT run in this repo. The twin's three diagnosis
-models are trained and evaluated in the Task E project workspace
-(submission notebook + advanced-modeling addendum), under the
-project's fixed protocol: split by run (train 725 / val 242 / test
-244), 88 no-oracle channels, windows W = 60/120/300/600 s, macro-F1.
+Model training does NOT run in this repo. The twin's diagnosis model
+(the Random Forest) is trained and evaluated in the Task E project
+workspace (submission notebook), under the project's fixed protocol:
+split by run (train 725 / val 242 / test 244), 88 no-oracle channels,
+windows W = 60/120/300/600 s, macro-F1.
 
 This script validates a retrain request against models/registry.json
 and prints the handoff summary: which model(s), and the exact
@@ -25,7 +25,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--model", required=True,
-                    help="registry key (rf|gbm|ens) or 'all'")
+                    help="registry key (see models/registry.json) or 'all'")
     ap.add_argument("--reason", default="manual")
     args = ap.parse_args()
 
@@ -49,18 +49,15 @@ def main():
   no-oracle channels, windows W = 60/120/300/600 s, test macro-F1.
 
 ### Where training actually runs
-The Task E project workspace: the submission notebook (original
-models incl. the Random Forest) and the advanced-modeling addendum
-(Gradient Boosting, TCN, ensemble, conformal/calibration analysis).
-This workflow is the *request + validation* side of continuous
-training only; it does not train models itself.
+The Task E project workspace: the submission notebook (the Random
+Forest and the homework's other models). This workflow is the
+*request + validation* side of continuous training only; it does not
+train models itself.
 
 ### Downstream steps after a retrain completes there
-1. Export the per-step probabilities for the twin's 12 baked runs
-   (GBM at all 60 steps; the ensemble ONLY at W = 60/120/300/600 s —
-   never interpolated).
-2. Re-bake `data/run_<CLASS>.json` and update
-   `tests/reference_advanced_probs.json` to the new export.
+1. Export the Random Forest's per-step probabilities for the twin's
+   12 baked runs (all 60 steps).
+2. Re-bake `data/run_<CLASS>.json` with the new export.
 3. Update `models/registry.json` in a PR with the new test macro-F1 —
    the **model validation gate** (`.github/workflows/model-gate.yml`)
    must pass: no production-stage model may regress >1% vs

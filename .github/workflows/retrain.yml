@@ -1,7 +1,7 @@
 name: CT — retrain handoff (stub)
 
 # Continuous-training *request* side. Training runs in the Task E
-# project workspace (submission notebook + advanced-modeling addendum),
+# project workspace (submission notebook),
 # not in this repo; this workflow validates a retrain request against
 # models/registry.json and records the handoff. It deliberately does
 # NOT train anything — see retrain/README.md and MLOPS.md.
@@ -16,8 +16,6 @@ on:
         options:
           - all
           - rf
-          - gbm
-          - ens
       reason:
         description: "Why is this retrain requested?"
         type: string

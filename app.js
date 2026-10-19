@@ -1,7 +1,7 @@
 // NPP Digital Twin — NPPAD accident diagnosis (Task E)
 // Standalone, offline. Data: baked PCTRAN test runs + per-step diagnosis
-// probabilities from three models (random forest, LightGBM gradient boosting,
-// RF+GBM+TCN ensemble), all trained with the Task E protocol (see README).
+// probabilities from the random forest — the classical baseline of Task E
+// item E2 — trained with the Task E protocol (see README).
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/OrbitControls.js';
 
@@ -14,42 +14,25 @@ const S = {
   manifest: null, run: null, runMeta: null,
   frame: 0, playing: true, speed: 1, scrubbing: false,
   reveal: false, chartSel: [], lastShownSec: -1, toastShown: false,
-  model: 'rf', // selected diagnosis model: 'rf' | 'gbm' | 'ens'
+  model: 'rf', // the twin's diagnosis model: the Task E random forest
   bases: {}, // per-channel pre-onset baseline of the loaded run
 };
 
-/* Diagnosis models. RF and GBM probabilities are baked at every step k=1..60.
-   The ensemble exists ONLY at W = 60/120/300/600 s (k = 6/12/30/60) — its
-   members were evaluated at those windows; currentProba returns null anywhere
-   else and the UI says so instead of interpolating. */
+/* Diagnosis model: the random forest (Task E item E2's classical
+   baseline). Its probabilities are baked at every step k=1..60. */
 const MODELS = {
   rf:  { tag: 'random forest',    label: 'Random Forest' },
-  gbm: { tag: 'gradient boosting', label: 'Gradient Boosting (LightGBM)' },
-  ens: { tag: 'ensemble',          label: 'Ensemble (RF + GBM + TCN)' },
 };
-const ENS_STEP_W = { 6: '60', 12: '120', 30: '300', 60: '600' }; // step k -> W key
 function currentProba(k) {
   if (!S.run || k <= 0) return null;
-  if (S.model === 'gbm') return S.run.proba_gbm ? S.run.proba_gbm[k - 1] : null;
-  if (S.model === 'ens') {
-    const key = ENS_STEP_W[k];
-    return key && S.run.proba_ens ? S.run.proba_ens[key] : null;
-  }
   return S.run.proba[k - 1];
 }
 /* 90% split-conformal (LAC) sets baked alongside the probabilities:
-   RF/GBM calibrated per step k on full-length validation runs; the
-   ensemble only at its evaluated windows, like its probabilities. */
+   the forest's, calibrated per step k on full-length validation runs. */
 function currentConfSet(k) {
   if (!S.run || !S.run.conf || k <= 0) return null;
-  if (S.model === 'gbm') return S.run.conf.gbm[k - 1] || null;
-  if (S.model === 'ens') {
-    const key = ENS_STEP_W[k];
-    return key ? (S.run.conf.ens[key] || null) : null;
-  }
   return S.run.conf.rf[k - 1] || null;
 }
-let EXPLAIN = null; // per-class global sensor importance (Task E round 2, SHAP)
 
 /* ---------------- data ---------------- */
 async function loadManifest() {
@@ -353,27 +336,11 @@ function updateDiagnosis() {
   if (k === 0 || !S.run) {
     $('diagIdle').classList.remove('hidden');
     $('diagBars').classList.add('hidden');
-    $('diagEns').classList.add('hidden');
     $('confBox').classList.add('hidden');
-    $('whyBox').classList.add('hidden');
     $('hudW').textContent = 'W = —';
-  } else if (!row) {
-    // ensemble selected at a step it does not define: say so, show nothing fake
-    $('diagIdle').classList.add('hidden');
-    $('diagBars').classList.add('hidden');
-    $('diagEns').classList.remove('hidden');
-    $('confBox').classList.add('hidden');
-    $('whyBox').classList.add('hidden');
-    $('hudW').textContent = `W = ${k * 10} s`;
-    if (S.reveal) {
-      $('truthLabel').textContent = `${S.run.class} (sev ${S.run.severity})`;
-      $('verdictLabel').textContent = 'ensemble n/a at this W';
-      $('verdictLabel').className = '';
-    }
   } else {
     const order = row.map((p, i) => [p, i]).sort((a, b) => b[0] - a[0]);
     $('diagIdle').classList.add('hidden');
-    $('diagEns').classList.add('hidden');
     $('diagBars').classList.remove('hidden');
     order.slice(0, 3).forEach(([p, ci], r) => {
       const rowEl = $('barRow' + r);
@@ -390,22 +357,10 @@ function updateDiagnosis() {
       $('confSet').innerHTML = cset.map(ci =>
         `<span class="conf-chip${S.manifest.classes[ci] === pred ? ' top' : ''}">${
           S.manifest.classes[ci]}</span>`).join('');
-      $('confNote').textContent = S.model === 'ens'
-        ? 'Classes the ensemble cannot rule out at 90% coverage (split-conformal, calibrated on validation runs at the evaluated windows). One class = confident; several = genuine ambiguity.'
-        : 'Classes the model cannot rule out at 90% coverage (split-conformal, calibrated per step on validation runs). One class = confident; several = genuine ambiguity at this step.';
+      $('confNote').textContent = 'Classes the model cannot rule out at 90% coverage (split-conformal, calibrated per step on validation runs). One class = confident; several = genuine ambiguity at this step.';
       $('confBox').classList.remove('hidden');
     } else {
       $('confBox').classList.add('hidden');
-    }
-    // "Why this diagnosis": per-class global sensor importance for the
-    // predicted class (GBM TreeSHAP, W = 600 s) — labelled as global.
-    const why = EXPLAIN && EXPLAIN.per_class_top_sensors[pred];
-    if (why) {
-      $('whyList').innerHTML = why.map(s =>
-        `<li><strong>${s.code}</strong> ${s.name}</li>`).join('');
-      $('whyBox').classList.remove('hidden');
-    } else {
-      $('whyBox').classList.add('hidden');
     }
     if (S.reveal) {
       $('truthLabel').textContent = `${S.run.class} (sev ${S.run.severity})`;
@@ -519,15 +474,6 @@ $('revealToggle').onchange = e => {
   $('truthBox').classList.toggle('hidden', !S.reveal);
   updateDiagnosis();
 };
-function setModel(m) {
-  if (!MODELS[m]) return;
-  S.model = m;
-  $('modelSel').value = m;
-  $('modelTag').textContent = MODELS[m].tag;
-  updateDiagnosis();
-}
-$('modelSel').onchange = e => setModel(e.target.value);
-
 function updateAll(force = false) {
   if (!S.run) return;
   updatePlant(performance.now());
@@ -603,18 +549,13 @@ window.__NPP_DT__ = {
       probaSum: row ? row.reduce((a, b) => a + b, 0) : null,
       top1: row ? S.manifest.classes[row.indexOf(Math.max(...row))] : null,
       top1Conf: row ? Math.max(...row) : null,
-      ensNoteVisible: !$('diagEns').classList.contains('hidden'),
       confSet: (currentConfSet(diagStep()) || []).map(ci => S.manifest.classes[ci]),
       confVisible: !$('confBox').classList.contains('hidden'),
-      whyVisible: !$('whyBox').classList.contains('hidden'),
-      whyTop: (() => { const li = $('whyList').querySelector('li strong');
-                       return li ? li.textContent : null; })(),
       sceneObjects: scene.children.length,
       playing: S.playing,
     };
   },
   setFrame: f => { S.frame = f; updateAll(true); },
-  setModel,
   loadRun,
   ready: () => !!S.run,
   renderInfo: () => ({ calls: renderer.info.render.calls,
@@ -640,8 +581,6 @@ window.__NPP_DT__ = {
 
 (async () => {
   await loadManifest();
-  fetch('data/explain.json').then(r => r.json()).then(j => { EXPLAIN = j; })
-    .catch(() => { EXPLAIN = null; });
   buildRunBar();
   await loadRun(S.manifest.runs[0].id);
   resize();
