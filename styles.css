@@ -93,6 +93,14 @@ main { display: flex; flex: 1; min-height: 0; }
 .bar-row.top .bar-fill { background: linear-gradient(90deg, #b97a1e, var(--accent2)); }
 .bar-val { text-align: right; font-variant-numeric: tabular-nums; font-size: 12.5px; }
 .diag-note { color: var(--dim); font-size: 11.5px; margin: 8px 0 0; }
+.sub-title { font-size: 12px; font-weight: 600; letter-spacing: .04em;
+  text-transform: uppercase; color: var(--dim); margin: 14px 0 6px; }
+.conf-set { display: flex; flex-wrap: wrap; gap: 5px; }
+.conf-chip { font-size: 12px; padding: 3px 9px; border-radius: 999px;
+  border: 1px solid var(--dim); color: var(--fg, #dbe4ee); }
+.conf-chip.top { border-color: var(--accent2); color: var(--accent2); font-weight: 600; }
+.why-list { margin: 0; padding-left: 18px; font-size: 12.5px; line-height: 1.5; }
+.why-list strong { color: var(--accent2); font-weight: 600; margin-right: 4px; }
 #truthBox { margin-top: 10px; border-top: 1px dashed var(--panel-line); padding-top: 8px; }
 #verdictLabel.ok { color: var(--good); }
 #verdictLabel.no { color: var(--bad); }

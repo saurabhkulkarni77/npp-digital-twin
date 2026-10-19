@@ -72,6 +72,21 @@
           <p class="diag-note">Top-3 of 12 accident classes, from the
             88 realistic (no-oracle) channels only.</p>
         </div>
+        <div id="confBox" class="hidden">
+          <div class="sub-title">90% conformal prediction set</div>
+          <div id="confSet" class="conf-set"></div>
+          <p class="diag-note" id="confNote">Classes the model cannot rule out
+            at 90% coverage (split-conformal, calibrated on validation runs).
+            One class = confident; several = genuine ambiguity at this step.</p>
+        </div>
+        <div id="whyBox" class="hidden">
+          <div class="sub-title">Why this diagnosis</div>
+          <ol id="whyList" class="why-list"></ol>
+          <p class="diag-note">Sensors the Gradient Boosting model relies on
+            most for the predicted class overall &mdash; per-class global
+            importance (TreeSHAP, W = 600 s windows), not a per-step
+            attribution for this frame.</p>
+        </div>
       </div>
       <div id="truthBox" class="hidden">
         <div class="hud-row"><span>True accident</span><strong id="truthLabel">&mdash;</strong></div>

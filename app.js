@@ -37,6 +37,19 @@ function currentProba(k) {
   }
   return S.run.proba[k - 1];
 }
+/* 90% split-conformal (LAC) sets baked alongside the probabilities:
+   RF/GBM calibrated per step k on full-length validation runs; the
+   ensemble only at its evaluated windows, like its probabilities. */
+function currentConfSet(k) {
+  if (!S.run || !S.run.conf || k <= 0) return null;
+  if (S.model === 'gbm') return S.run.conf.gbm[k - 1] || null;
+  if (S.model === 'ens') {
+    const key = ENS_STEP_W[k];
+    return key ? (S.run.conf.ens[key] || null) : null;
+  }
+  return S.run.conf.rf[k - 1] || null;
+}
+let EXPLAIN = null; // per-class global sensor importance (Task E round 2, SHAP)
 
 /* ---------------- data ---------------- */
 async function loadManifest() {
@@ -341,12 +354,16 @@ function updateDiagnosis() {
     $('diagIdle').classList.remove('hidden');
     $('diagBars').classList.add('hidden');
     $('diagEns').classList.add('hidden');
+    $('confBox').classList.add('hidden');
+    $('whyBox').classList.add('hidden');
     $('hudW').textContent = 'W = —';
   } else if (!row) {
     // ensemble selected at a step it does not define: say so, show nothing fake
     $('diagIdle').classList.add('hidden');
     $('diagBars').classList.add('hidden');
     $('diagEns').classList.remove('hidden');
+    $('confBox').classList.add('hidden');
+    $('whyBox').classList.add('hidden');
     $('hudW').textContent = `W = ${k * 10} s`;
     if (S.reveal) {
       $('truthLabel').textContent = `${S.run.class} (sev ${S.run.severity})`;
@@ -366,8 +383,31 @@ function updateDiagnosis() {
       rowEl.querySelector('.bar-val').textContent = (p * 100).toFixed(0) + '%';
     });
     $('hudW').textContent = `W = ${k * 10} s`;
+    const pred = S.manifest.classes[order[0][1]];
+    // conformal set for this step/model (baked; absent only pre-bake)
+    const cset = currentConfSet(k);
+    if (cset) {
+      $('confSet').innerHTML = cset.map(ci =>
+        `<span class="conf-chip${S.manifest.classes[ci] === pred ? ' top' : ''}">${
+          S.manifest.classes[ci]}</span>`).join('');
+      $('confNote').textContent = S.model === 'ens'
+        ? 'Classes the ensemble cannot rule out at 90% coverage (split-conformal, calibrated on validation runs at the evaluated windows). One class = confident; several = genuine ambiguity.'
+        : 'Classes the model cannot rule out at 90% coverage (split-conformal, calibrated per step on validation runs). One class = confident; several = genuine ambiguity at this step.';
+      $('confBox').classList.remove('hidden');
+    } else {
+      $('confBox').classList.add('hidden');
+    }
+    // "Why this diagnosis": per-class global sensor importance for the
+    // predicted class (GBM TreeSHAP, W = 600 s) — labelled as global.
+    const why = EXPLAIN && EXPLAIN.per_class_top_sensors[pred];
+    if (why) {
+      $('whyList').innerHTML = why.map(s =>
+        `<li><strong>${s.code}</strong> ${s.name}</li>`).join('');
+      $('whyBox').classList.remove('hidden');
+    } else {
+      $('whyBox').classList.add('hidden');
+    }
     if (S.reveal) {
-      const pred = S.manifest.classes[order[0][1]];
       $('truthLabel').textContent = `${S.run.class} (sev ${S.run.severity})`;
       const ok = pred === S.run.class;
       $('verdictLabel').textContent = ok ? `correct — ${pred}` : `model says ${pred}`;
@@ -564,6 +604,11 @@ window.__NPP_DT__ = {
       top1: row ? S.manifest.classes[row.indexOf(Math.max(...row))] : null,
       top1Conf: row ? Math.max(...row) : null,
       ensNoteVisible: !$('diagEns').classList.contains('hidden'),
+      confSet: (currentConfSet(diagStep()) || []).map(ci => S.manifest.classes[ci]),
+      confVisible: !$('confBox').classList.contains('hidden'),
+      whyVisible: !$('whyBox').classList.contains('hidden'),
+      whyTop: (() => { const li = $('whyList').querySelector('li strong');
+                       return li ? li.textContent : null; })(),
       sceneObjects: scene.children.length,
       playing: S.playing,
     };
@@ -595,6 +640,8 @@ window.__NPP_DT__ = {
 
 (async () => {
   await loadManifest();
+  fetch('data/explain.json').then(r => r.json()).then(j => { EXPLAIN = j; })
+    .catch(() => { EXPLAIN = null; });
   buildRunBar();
   await loadRun(S.manifest.runs[0].id);
   resize();
