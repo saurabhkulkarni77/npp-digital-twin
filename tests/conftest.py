@@ -2,8 +2,7 @@
 
 The suite validates the *baked* twin exactly as it is served: page/JS
 sanity, run-data contracts (12 runs x 63 frames x 60 diagnosis steps),
-the round-2 conformal prediction sets, and internal asset/link
-targets. Everything is
+and internal asset/link targets. Everything is
 stdlib-only apart from pytest itself.
 """
 import json

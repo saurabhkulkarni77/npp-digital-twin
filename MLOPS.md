@@ -18,12 +18,11 @@ pattern mirrors the HydroTwin lab repo's Level-2 build.
 |---|---|---|
 | CI — code tests | pytest suite on every PR and push to `main`: `app.js` parses as an ES module (node --check), `index.html` presents exactly the one served model with the registry's label | `.github/workflows/ci.yml`, `tests/test_site_integrity.py` |
 | CI — data contracts | manifest (12 classes in canonical order, 17 channels, onset t = 20 s) and every run file: 63 frames on the 0–620 s axis, channel series per frame, RF block = 60 steps of valid 12-class distributions | `tests/test_data_contracts.py` |
-| CI — conformal contracts | every run's `conf` block carries the Random Forest's 90% LAC prediction sets at **all 60 steps**, each containing its probability row's argmax class | `tests/test_conformal_contracts.py` |
 | CI — link/asset checks | every relative href/src in `index.html`, importmap target, module import, and data file referenced by `app.js`/manifest resolves to a repo file | `tests/test_links.py` |
 | Model registry | versioned registry of the diagnosis model: stage, how it is served in the run files, and its no-oracle test macro-F1 at W = 120/300/600 | `models/registry.json` |
 | Validation gate | PRs touching `models/**` fail if a production-stage model's test macro-F1 regresses >1% (relative) vs the frozen baselines at any gated window, unless the PR carries the `allow-regression` label | `models/gate.py`, `models/baselines.json`, `.github/workflows/model-gate.yml` |
 | Monitoring | weekly job re-validates run-data integrity + registry consistency from the repo and probes both live hostings (Pages + S3: HTTP 200, model tag present, spot data checks); opens/updates one `mlops-monitor` issue on findings, silent otherwise | `monitor/monitor.py`, `.github/workflows/monitor.yml` |
-| Continuous training (CT) | request + validation side here (honest stub); training itself runs in the Task E project workspace (submission notebook + advanced addendum) under the fixed protocol; post-retrain metrics re-enter through the gate | `.github/workflows/retrain.yml`, `retrain/` |
+| Continuous training (CT) | request + validation side here (honest stub); training itself runs in the Task E project workspace (submission notebook) under the fixed protocol; post-retrain metrics re-enter through the gate | `.github/workflows/retrain.yml`, `retrain/` |
 | CD — site deploy | pushes to `main` redeploy GitHub Pages automatically; AWS S3 is synced by the manual deploy workflow in the hydrotwin-site repo (unchanged) | GitHub Pages |
 | CD — releases | version tags (or manual dispatch) build the twin distribution ZIP (no `.github/`) and publish a GitHub Release with generated notes | `.github/workflows/release.yml` |
 
@@ -67,6 +66,12 @@ relative band around it would be noise, not signal.
   (`tests/reference_advanced_probs.json`) were removed with the models
   when the twin was aligned to the homework's model list (Task E:
   logistic regression / random forest, 1D CNN, LSTM / GRU).
+* The round-2 split-conformal prediction sets (`conf` blocks in the
+  run files plus the chips UI) were removed on 2026-10-19, when all
+  advanced modeling was dropped from Homework 2; the twin serves the
+  core homework diagnosis only. A regression test
+  (`tests/test_conformal_regression.py`) keeps `conf` out of the
+  baked runs and the page.
 * The monitor's live probes check reachability and key markers, not
   full page rendering; deep UI verification stays with the project's
   browser harness in the Task E workspace.

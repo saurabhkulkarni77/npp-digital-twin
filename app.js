@@ -27,13 +27,6 @@ function currentProba(k) {
   if (!S.run || k <= 0) return null;
   return S.run.proba[k - 1];
 }
-/* 90% split-conformal (LAC) sets baked alongside the probabilities:
-   the forest's, calibrated per step k on full-length validation runs. */
-function currentConfSet(k) {
-  if (!S.run || !S.run.conf || k <= 0) return null;
-  return S.run.conf.rf[k - 1] || null;
-}
-
 /* ---------------- data ---------------- */
 async function loadManifest() {
   const r = await fetch('data/manifest.json');
@@ -336,7 +329,6 @@ function updateDiagnosis() {
   if (k === 0 || !S.run) {
     $('diagIdle').classList.remove('hidden');
     $('diagBars').classList.add('hidden');
-    $('confBox').classList.add('hidden');
     $('hudW').textContent = 'W = —';
   } else {
     const order = row.map((p, i) => [p, i]).sort((a, b) => b[0] - a[0]);
@@ -351,17 +343,6 @@ function updateDiagnosis() {
     });
     $('hudW').textContent = `W = ${k * 10} s`;
     const pred = S.manifest.classes[order[0][1]];
-    // conformal set for this step/model (baked; absent only pre-bake)
-    const cset = currentConfSet(k);
-    if (cset) {
-      $('confSet').innerHTML = cset.map(ci =>
-        `<span class="conf-chip${S.manifest.classes[ci] === pred ? ' top' : ''}">${
-          S.manifest.classes[ci]}</span>`).join('');
-      $('confNote').textContent = 'Classes the model cannot rule out at 90% coverage (split-conformal, calibrated per step on validation runs). One class = confident; several = genuine ambiguity at this step.';
-      $('confBox').classList.remove('hidden');
-    } else {
-      $('confBox').classList.add('hidden');
-    }
     if (S.reveal) {
       $('truthLabel').textContent = `${S.run.class} (sev ${S.run.severity})`;
       const ok = pred === S.run.class;
@@ -549,8 +530,6 @@ window.__NPP_DT__ = {
       probaSum: row ? row.reduce((a, b) => a + b, 0) : null,
       top1: row ? S.manifest.classes[row.indexOf(Math.max(...row))] : null,
       top1Conf: row ? Math.max(...row) : null,
-      confSet: (currentConfSet(diagStep()) || []).map(ci => S.manifest.classes[ci]),
-      confVisible: !$('confBox').classList.contains('hidden'),
       sceneObjects: scene.children.length,
       playing: S.playing,
     };

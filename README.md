@@ -38,9 +38,7 @@ Also hosted at:
   deviation from its own steady state) — not by canned animation.
 - **Live diagnosis panel** — top-3 accident probabilities from the
   **Random Forest** (the classical baseline of Task E item E2), updated as
-  the observation window W grows, with its **90% conformal prediction
-  set**: the classes the forest cannot rule out at 90% coverage
-  (split-conformal, calibrated per step on validation runs).
+  the observation window W grows.
   Probabilities stay near-uniform at W ≤ 60 s and sharpen after ~120 s —
   the project's core finding, visible live. A *Reveal true accident*
   toggle scores the model.
@@ -101,7 +99,12 @@ RF + GBM + TCN ensemble from the post-homework advanced-modeling addendum
 were served here briefly and removed on 2026-10-19, when the twin was
 aligned to the model list named in the assignment (Task E: logistic
 regression / random forest, 1D CNN, LSTM / GRU). The addendum's results
-stand in the project files, not in this twin.
+stand in the project files, not in this twin. The 90% split-conformal
+prediction sets that were baked in alongside the forest during the
+advanced rounds (a `conf` block in every run file, shown as chips under
+the diagnosis bars) were removed later the same day, when all advanced
+modeling was dropped from Homework 2 — the twin now presents the core
+homework diagnosis only: the forest's per-step probabilities.
 
 ## Honest quirks of the data
 
@@ -123,8 +126,7 @@ index.html  styles.css  app.js     the app (Three.js scene + UI + charts)
 vendor/                            three.module.js (r160, MIT) + OrbitControls.js
 data/manifest.json                 classes, channel metadata, run index, model card
 data/run_<CLASS>.json              one baked test run per class (channels + per-step
-                                   probabilities: proba = RF at all 60 steps, plus the
-                                   forest's 90% conformal sets in conf)
+                                   probabilities: proba = RF at all 60 steps)
 .github/workflows/deploy-aws.yml   optional AWS S3 deploy (mirrors HydroTwin)
 ```
 
@@ -135,8 +137,8 @@ change any submitted deliverable.
 ## MLOps (Level 2)
 
 This repo runs a Level-2 MLOps setup around the twin's baked Random
-Forest diagnosis model — CI tests for the site, the run data, and the
-conformal prediction sets; a versioned model registry with a
+Forest diagnosis model — CI tests for the site and the run data;
+a versioned model registry with a
 validation gate (no served model's test macro-F1 may regress >1% vs
 the frozen baselines without an `allow-regression` label); a weekly
 monitor that re-validates the baked data and probes both live

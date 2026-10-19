@@ -1,9 +1,8 @@
 name: CI — site, data & model tests
 
 # Level-2 CI: on every PR and every push to main, validate the baked
-# twin site (HTML/JS sanity), the baked data (run-JSON contracts,
-# conformal prediction-set contracts), the
-# model registry, and internal asset/link targets.
+# twin site (HTML/JS sanity), the baked data (run-JSON contracts),
+# the model registry, and internal asset/link targets.
 # A red run blocks merge confidence — see MLOPS.md.
 
 on:
